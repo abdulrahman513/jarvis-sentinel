@@ -1,0 +1,20 @@
+# JARVIS CONFIGURATION ENGINE
+# Note: DO NOT put the Gemini API key here. That stays in the .env file.
+
+system:
+  os_type: "pop_os"
+  enable_failsafe: true  # Master kill-switch for mouse/keyboard automation
+
+monitoring:
+  cpu_alert_threshold: 90.0
+  scan_interval_seconds: 10
+
+paths:
+  auth_log: "/var/log/auth.log"
+  syslog: "/var/log/syslog"
+  snapshot_dir: "./evidence/" # Where Jarvis saves screenshots of attacks
+
+defense:
+  # If false, Jarvis will ask you before executing ufw blocks.
+  # If true, Jarvis operates autonomously (High Risk/High Reward).
+  autonomous_blocking: false

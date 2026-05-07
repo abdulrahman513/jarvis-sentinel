@@ -1,0 +1,6 @@
+google-generativeai
+psutil
+pyautogui
+python-dotenv
+termcolor
+rich
