@@ -1,0 +1,31 @@
+{
+  "project_info": {
+    "name": "J.A.R.V.I.S. Autonomous Sentinel",
+    "version": "1.0.0",
+    "author": "rana"
+  },
+  "network_settings": {
+    "interface": "eno1",
+    "monitor_mode": true,
+    "local_network_range": "192.168.100.0/24"
+  },
+  "analysis_thresholds": {
+    "failed_login_limit": 5,
+    "suspicious_traffic_mb": 500,
+    "abuse_confidence_score": 25
+  },
+  "logging": {
+    "log_file_path": "/var/log/jarvis_sentinel.log",
+    "log_level": "INFO",
+    "enable_discord_alerts": true
+  },
+  "modules": {
+    "abuseipdb_lookup": true,
+    "groq_analysis": true,
+    "gemini_reporting": true
+  },
+  "policy_engine": {
+    "trusted_ips": ["127.0.0.1", "::1", "192.168.100.31"],
+    "maintenance_mode": false
+  }
+}

@@ -1,68 +1,40 @@
-# actuators.py
-import subprocess
 import os
 import requests
-from rich.console import Console
+import subprocess
 from dotenv import load_dotenv
 
-# Ensure .env is loaded for the Webhook URL
 load_dotenv()
-console = Console()
 
-def send_discord_alert(title: str, message: str, color: int = 15158332) -> str:
-    """Sends a professional-grade security alert to a Discord Webhook."""
+def send_discord_alert(title, message):
     webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        return "Discord Error: Webhook URL not found in .env"
-
-    payload = {
+    if not webhook_url: return
+    
+    data = {
         "embeds": [{
-            "title": f"🚨 {title}",
+            "title": title,
             "description": message,
-            "color": color, # Default is Red
-            "footer": {"text": "J.A.R.V.I.S. Autonomous Sentinel"}
+            "color": 15158332,
+            "footer": {"text": "J.A.R.V.I.S. Autonomous Sentinel | Defense Active"}
         }]
     }
-
     try:
-        # Standard ISO format for Discord timestamps
-        from datetime import datetime
-        payload["embeds"][0]["timestamp"] = datetime.utcnow().isoformat()
-        
-        # CRITICAL: timeout=10 prevents the entire agent from freezing if Discord is lagging
-        response = requests.post(webhook_url, json=payload, timeout=10)
-        
-        if response.status_code == 204:
-            return "Discord alert dispatched."
-        return f"Discord Error: {response.status_code}"
-    except Exception as e:
-        return f"Discord Connection Error: {e}"
+        requests.post(webhook_url, json=data, timeout=5)
+    except: pass
 
-def display_desktop_alert(title: str, message: str) -> str:
-    """Sends a native desktop notification."""
-    console.print(f"[bold magenta][SYSTEM] Jarvis is sending DBus Signal: {message}[/bold magenta]")
+def lock_workstation():
+    """Triggers the system lock-session command."""
     try:
-        subprocess.run(["notify-send", "-u", "critical", title, message], check=True)
-        return "Notification sent."
-    except Exception as e:
-        return f"Notification Error: {e}"
-
-def lock_workstation() -> str:
-    """Locks the Linux desktop session."""
-    console.print("[bold red][SYSTEM] Jarvis is locking the workstation...[/bold red]")
-    try:
-        # Most reliable way to lock GNOME/COSMIC from root
         subprocess.run(["loginctl", "lock-sessions"], check=True)
-        return "Workstation locked successfully."
+        return "Workstation locked."
     except Exception as e:
-        return f"Lock Error: {e}"
+        return f"Lock failed: {str(e)}"
 
-def take_security_snapshot(filename: str = "alert_snapshot.png") -> str:
-    """Captures the screen if possible (forensic evidence)."""
+def display_desktop_alert(title, message):
+    """Sends a desktop notification to the user's active session."""
     try:
-        import pyautogui
-        console.print(f"[bold yellow][SYSTEM] Jarvis is taking a forensic snapshot: {filename}[/bold yellow]")
-        pyautogui.screenshot(filename)
-        return f"Snapshot saved as {filename}"
-    except Exception:
-        return "Snapshot failed: GUI dependency or session issue."
+        user = os.getenv("SUDO_USER", "rana")
+        cmd = f"sudo -u {user} DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u {user})/bus notify-send '{title}' '{message}'"
+        subprocess.run(cmd, shell=True)
+        return "Desktop notification sent."
+    except:
+        return "Notification failed."
