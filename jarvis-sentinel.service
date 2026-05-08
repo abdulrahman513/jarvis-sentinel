@@ -1,0 +1,15 @@
+[Unit]
+Description=J.A.R.V.I.S. Autonomous Sentinel - 24/7 SOC Agent
+After=network.target
+
+[Service]
+# We run as root because Scapy and UFW need raw socket/firewall permissions
+Type=simple
+User=root
+WorkingDirectory=/home/rana/jarvis-sentinel
+ExecStart=/home/rana/jarvis-sentinel/.venv/bin/python main.py --sentinel
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

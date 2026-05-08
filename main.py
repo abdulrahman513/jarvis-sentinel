@@ -1,95 +1,98 @@
-import shield
-import reporter
+# main.py (Final Production Version)
 import re
 import sys
 import os
+import threading
 import time
+import shield
+import brain
+import database
+import actuators
+from brain import JarvisBrain
+from groq_brain import GroqBrain 
+from monitor import SystemMonitor
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
-from brain import JarvisBrain
-from groq_brain import GroqBrain
-from monitor import SystemMonitor
 
 console = Console()
+PROCESSED_LOGS = set()
+LAST_ALERT_TIME = 0
+IS_LOCKED = False
 
-def ensure_root_privileges():
-    if os.geteuid() != 0:
-        args = ['sudo', sys.executable] + sys.argv
-        os.execlpe('sudo', *args, os.environ)
-
-def run_sentinel_loop(jarvis, groq_brain):
-    console.print("[bold yellow][SYSTEM] J.A.R.V.I.S. Active Stream Monitor engaged.[/bold yellow]")
-    while True:
+def handle_forensics_async(threat_ip, defense_data, jarvis, groq_fallback):
+    global LAST_ALERT_TIME, IS_LOCKED
+    try:
+        # 1. AI ANALYSIS
+        analysis = ""
         try:
-            for log_entry in shield.listen_to_logs_live():
-                ip_match = re.search(r'from (\d+\.\d+\.\d+\.\d+)', log_entry)
-                target_ip = ip_match.group(1) if ip_match else "Unknown"
+            analysis = brain.analyze_forensic_summary(defense_data['summary_path'])
+            if "500" in analysis or "ERROR" in analysis: raise Exception("Server Glitch")
+        except:
+            analysis = groq_fallback.think(f"Analyze this attack: {defense_data['summary_path']}")
 
-                if target_ip in shield.RECENTLY_BLOCKED:
-                    continue
+        # 2. PERSISTENCE
+        database.log_incident(
+            threat_ip, "High Risk", defense_data['geo'].get('city', 'Unknown'), 
+            defense_data['summary_path'], defense_data['summary_path'], "UFW_BLOCK", analysis
+        )
+        
+        # 3. SMART NOTIFICATION (Rate limiting alerts to 1 per 5 seconds)
+        current_time = time.time()
+        if (current_time - LAST_ALERT_TIME) > 5:
+            discord_msg = f"🛡️ **Mitigated:** `{threat_ip}`\n**Insight:** {analysis}\n**Map:** [View]({defense_data['map_url']})"
+            actuators.send_discord_alert("J.A.R.V.I.S. Mitigation", discord_msg)
+            LAST_ALERT_TIME = current_time
+        
+        console.print(Panel(Markdown(f"### Background Analysis Complete\n**IP:** {threat_ip}\n**Analysis:** {analysis}"), border_style="green"))
+    except Exception as e:
+        console.print(f"[bold red][ERROR] Forensics Failed for {threat_ip}: {e}[/bold red]")
 
-                console.print(f"\n[bold red][ALERT][/bold red] New unique threat: {target_ip}")
-                directive = f"NEW LOG: {log_entry}\nAnalyze this. If foreign attack, block and lock."
-                
-                try:
-                    with console.status("[bold cyan]Consulting Gemini...[/bold cyan]"):
-                        response = jarvis.think(directive)
-                except Exception as e:
-                    if "429" in str(e):
-                        console.print("[bold orange]FAILOVER: Gemini limit hit. Using Groq...[/bold orange]")
-                        response = groq_brain.think(directive)
-                    else:
-                        response = f"Brain Error: {e}"
+def run_sentinel_loop(jarvis, groq_fallback):
+    global IS_LOCKED
+    console.print("[bold yellow][SYSTEM] J.A.R.V.I.S. Active Stream Monitor engaged.[/bold yellow]")
+    
+    for log_line in shield.listen_to_logs_live():
+        if log_line in PROCESSED_LOGS: continue
+        
+        ip_match = re.search(r'from\s+(\d+\.\d+\.\d+\.\d+)', log_line)
+        if ip_match:
+            threat_ip = ip_match.group(1)
+            
+            # IMMEDIATE BLOCK (Database check prevents duplicates here)
+            defense_data = shield.block_ip(threat_ip)
+            if not defense_data: continue 
+            
+            PROCESSED_LOGS.add(log_line)
+            
+            # SMART LOCK: Only lock if not already locked
+            if not IS_LOCKED:
+                actuators.lock_workstation()
+                IS_LOCKED = True
+                # Reset lock state after 30 seconds to allow for future locks
+                threading.Timer(30, lambda: globals().update(IS_LOCKED=False)).start()
 
-                console.print(Panel(Markdown(response), title="Jarvis (Live Response)", border_style="red"))
-        except Exception as e:
-            console.print(f"[bold red]Sentinel error: {e}. Restarting...[/bold red]")
-            time.sleep(5)
+            # OFFLOAD FORENSICS
+            threading.Thread(
+                target=handle_forensics_async, 
+                args=(threat_ip, defense_data, jarvis, groq_fallback),
+                daemon=True
+            ).start()
+            
+            console.print(f"[bold green][INFO] Neutralized {threat_ip}. Processing intel...[/bold green]")
 
 def main():
-    ensure_root_privileges()
-    console.print(Panel.fit("[bold blue]J.A.R.V.I.S. Blue Team Interface[/bold blue]\n[green]Status: ACTIVE[/green]"))
-    
-    with console.status("[bold cyan]Waking up AI cores...[/bold cyan]"):
-        jarvis = JarvisBrain()
-        groq_brain = GroqBrain()
-        watcher = SystemMonitor()
-        watcher.start()
+    if os.geteuid() != 0:
+        console.print("[bold red][ERROR] Requires root.[/bold red]")
+        return
 
-    if "--report" in sys.argv:
-        reporter.generate_security_report()
-        watcher.stop()
-        return    
+    jarvis = JarvisBrain()
+    groq_fallback = GroqBrain()
+    watcher = SystemMonitor()
+    watcher.start()
 
     if "--sentinel" in sys.argv:
-        run_sentinel_loop(jarvis, groq_brain)
-        return 
-
-    while True:
-        try:
-            user_input = console.input("[bold green]Rana@Pop-OS:[/bold green] ")
-            if user_input.lower() in ['exit', 'quit']:
-                watcher.stop()
-                sys.exit(0)
-            
-            if user_input.lower() == "sentinel":
-                run_sentinel_loop(jarvis, groq_brain)
-                continue
-
-            with console.status("[bold cyan]Analyzing...[/bold cyan]"):
-                try:
-                    response = jarvis.think(user_input)
-                except Exception as e:
-                    if "429" in str(e):
-                        response = groq_brain.think(user_input)
-                    else:
-                        response = f"Error: {e}"
-            
-            console.print(Panel(Markdown(response), title="Jarvis", border_style="cyan"))
-        except KeyboardInterrupt:
-            watcher.stop()
-            sys.exit(0)
+        run_sentinel_loop(jarvis, groq_fallback)
 
 if __name__ == "__main__":
     main()

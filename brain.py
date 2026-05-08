@@ -1,56 +1,54 @@
 # brain.py
 import os
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 from skills import JARVIS_TOOLS
 
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Hardcoded to your preferred model
+TARGET_MODEL = "models/gemma-4-26b-a4b-it"
+
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+def analyze_forensic_summary(summary_path: str) -> str:
+    """Uses Gemma-4 to analyze forensic intent."""
+    if not os.path.exists(summary_path) or summary_path == "N/A":
+        return "Minimal reconnaissance detected; no payload captured."
+    try:
+        with open(summary_path, "r") as f:
+            forensic_data = f.read()
+            
+        response = client.models.generate_content(
+            model=TARGET_MODEL,
+            config=types.GenerateContentConfig(
+                system_instruction="Senior SOC Analyst mode. Identify intent from packet flags and hex data. Output 2 sentences max."
+            ),
+            contents=f"Analyze this threat forensic data:\n{forensic_data}"
+        )
+        return response.text.strip()
+    except Exception as e:
+        return f"Gemma-4 Analysis Failed: {e}"
+
 class JarvisBrain:
     def __init__(self):
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("CRITICAL: GEMINI_API_KEY not found in .env file.")
-            
-        genai.configure(api_key=api_key)
+        if not GEMINI_API_KEY:
+            raise ValueError("CRITICAL: GEMINI_API_KEY missing.")
         
-        # --- SELF-HEALING DISCOVERY PHASE ---
-        print("[SYSTEM] Interrogating API for available models...")
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        print(f"[SYSTEM] Brain Linked to: {TARGET_MODEL}")
         
-        # Filter out 2.5 and 2.0 to avoid the strict 20-request daily limits
-        safe_models = [m for m in available_models if "2.5" not in m and "2.0" not in m]
-        
-        # Force fallback to the high-quota 1.5 models
-        priority_models = [
-            "models/gemini-1.5-flash",
-            "models/gemini-1.5-pro",
-            "models/gemini-1.0-pro"
-        ]
-        
-        self.model_id = next((m for m in priority_models if m in safe_models), None)
-        
-        if not self.model_id:
-            # Absolute fallback
-            self.model_id = safe_models[0] if safe_models else available_models[0]
-            
-        print(f"[SYSTEM] Brain Linked to: {self.model_id}")
-        # ------------------------------------
-
-        self.model = genai.GenerativeModel(
-            model_name=self.model_id,
-            tools=JARVIS_TOOLS,
+        self.config = types.GenerateContentConfig(
             system_instruction=(
-                "CRITICAL INSTRUCTION: You are J.A.R.V.I.S., an active system agent. "
-                "YOU MUST NEVER output your internal reasoning, 'Plan:', or thought process to the user. "
+                "You are J.A.R.V.I.S., an active SOC agent on Pop!_OS. "
                 "OUTPUT ONLY your final conversational response. "
-                "If asked to notify, you MUST execute the 'trigger_visual_alert' function."
-            )
+                "If an intrusion is detected, coordinate with the Sentinel system to neutralize it."
+            ),
+            tools=JARVIS_TOOLS,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=False)
         )
-        
-        self.chat = self.model.start_chat(enable_automatic_function_calling=True)
+        self.chat = client.chats.create(model=TARGET_MODEL, config=self.config)
 
     def think(self, user_input: str) -> str:
         try:

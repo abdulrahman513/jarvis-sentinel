@@ -1,6 +1,0 @@
-Timestamp,Target_IP,Reputation,Action,Reason
-2026-05-07 01:43:27,112.45.16.88,Risk Score: 0% | Origin: CN,UFW_BLOCK,Brute force detected. Intel: Risk Score: 0% | Origin: CN
-2026-05-07 01:59:29,112.45.16.88,Risk Score: 0% | Origin: CN,UFW_BLOCK,Brute force detected. Intel: Risk Score: 0% | Origin: CN
-2026-05-07 02:00:53,112.45.16.88,Risk Score: 0% | Origin: CN,UFW_BLOCK,Brute force detected. Intel: Risk Score: 0% | Origin: CN
-2026-05-07 03:03:04,112.45.16.88,Risk Score: 0% | Origin: CN,UFW_BLOCK
-2026-05-07 03:26:48,112.45.16.88,Risk Score: 0% | Origin: CN,UFW_BLOCK

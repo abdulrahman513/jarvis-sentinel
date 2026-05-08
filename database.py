@@ -6,9 +6,10 @@ DB_PATH = "/home/rana/jarvis-sentinel/jarvis_sentinel.db"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
-    # Enable WAL mode for concurrent read/write stability
     conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
+    
+    # Existing Incidents Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS incidents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,8 +23,33 @@ def init_db():
             brain_analysis TEXT
         )
     ''')
+    
+    # NEW: Persistent Blacklist Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blacklist (
+            ip_address TEXT PRIMARY KEY,
+            blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            reason TEXT
+        )
+    ''')
+    
     conn.commit()
     conn.close()
+
+def add_to_blacklist(ip, reason="Auth Failure"):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO blacklist (ip_address, reason) VALUES (?, ?)", (ip, reason))
+    conn.commit()
+    conn.close()
+
+def is_blacklisted(ip):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM blacklist WHERE ip_address = ?", (ip,))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
 
 def log_incident(ip, intel, location, pcap, summary, action, analysis):
     conn = sqlite3.connect(DB_PATH)
@@ -35,14 +61,6 @@ def log_incident(ip, intel, location, pcap, summary, action, analysis):
     conn.commit()
     conn.close()
 
-def get_recent_incidents(limit=10):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM incidents ORDER BY timestamp DESC LIMIT ?", (limit,))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
 if __name__ == "__main__":
     init_db()
-    print("Database Initialized in WAL Mode at", DB_PATH)
+    print("[SYSTEM] Database & Blacklist Table Initialized.")
