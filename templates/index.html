@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>J.A.R.V.I.S. SIEM</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { background-color: #0b0e14; color: #adbac7; font-family: monospace; }
+        .siem-box { background: #1c2128; border: 1px solid #444c56; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+    </style>
+</head>
+<body class="p-4 h-screen flex flex-col overflow-hidden">
+
+    <header class="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+        <h1 class="text-lg font-bold text-white tracking-widest uppercase">J.A.R.V.I.S. SIEM</h1>
+        <div class="flex gap-4 items-center">
+            <div id="maint-btn">
+                <button hx-post="/toggle-maint" hx-target="#maint-btn" hx-swap="outerHTML" 
+                    class="border {{ 'text-orange-500 border-orange-500' if maint else 'text-gray-600 border-gray-800' }} px-2 py-1 uppercase text-[10px]">
+                    MAINT: {{ 'ON' if maint else 'OFF' }}
+                </button>
+            </div>
+            <div class="text-[10px] text-green-500 border-l border-gray-700 pl-4">SENTINEL: ACTIVE</div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-12 gap-4 flex-grow overflow-hidden">
+        <div class="col-span-8 flex flex-col gap-4 overflow-hidden">
+            <div class="siem-box flex-grow p-4 overflow-y-auto">
+                <table class="w-full text-left text-[11px]">
+                    <thead class="text-gray-500 border-b border-gray-700 uppercase">
+                        <tr><th>TIME</th><th>TARGET IP</th><th>INSIGHT</th><th>ACTIONS</th></tr>
+                    </thead>
+                    <tbody hx-get="/get-queue" hx-trigger="every 5s">
+                        {% for inc in incidents %}
+                        <tr class="border-b border-gray-800/30">
+                            <td class="py-2 text-gray-600">{{ inc[1] }}</td>
+                            <td class="text-blue-400 font-bold">{{ inc[2] }}</td>
+                            <td class="truncate max-w-xs">{{ inc[8] }}</td>
+                            <td class="flex gap-2">
+                                <button hx-post="/pardon" hx-vals='{"ip": "{{ inc[2] }}"}' hx-swap="outerHTML" class="text-red-500 underline text-[10px]">PARDON</button>
+                                <button hx-post="/get-forensics" hx-vals='{"path": "{{ inc[6] }}"}' hx-target="#forensic-slate" class="text-green-500 underline text-[10px]">LOGS</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div id="forensic-slate" class="h-40 siem-box p-3 overflow-auto font-mono text-[10px] text-gray-500">
+                // Select [LOGS] to inspect forensic payload...
+            </div>
+        </div>
+
+        <div class="col-span-4 flex flex-col gap-4 overflow-hidden">
+            <div id="map" class="h-40 siem-box rounded brightness-75"></div>
+            <div class="siem-box flex-grow p-4 flex flex-col overflow-hidden">
+                <div id="chat-window" class="flex-grow overflow-y-auto mb-4 text-[11px] space-y-2">
+                    {% for chat in chat_history %}
+                    <div class="{{ 'text-white/40' if chat[0] == 'USER' else 'text-green-400' }}"><strong>{{ chat[0] }}:</strong> {{ chat[1] }}</div>
+                    {% endfor %}
+                </div>
+                <form hx-post="/chat" hx-target="#chat-window" hx-swap="beforeend" hx-on::after-request="this.reset()" hx-indicator="#think-msg" class="relative">
+                    <input name="message" autocomplete="off" placeholder="Inquire or Generate Reports..." class="w-full bg-black border border-gray-700 p-2 text-xs outline-none focus:border-green-500">
+                    <span id="think-msg" class="htmx-indicator absolute right-2 top-2 text-[10px] text-orange-500 animate-pulse uppercase">Thinking...</span>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map', {zoomControl: false}).setView([20, 0], 1);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const cw = document.getElementById('chat-window'); cw.scrollTop = cw.scrollHeight;
+    </script>
+</body>
+</html>

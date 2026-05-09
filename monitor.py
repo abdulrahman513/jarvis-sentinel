@@ -21,5 +21,10 @@ class SystemMonitor:
         self.thread = threading.Thread(target=self._watch, daemon=True)
         self.thread.start()
 
+    # monitor.py - Add this at the end of your block_ip logic
+    def notify_dashboard(ip_address, lat, lon):
+        with open("/tmp/jarvis_event.json", "w") as f:
+         json.dump({"ip": ip_address, "lat": lat, "lon": lon}, f)    
+
     def stop(self):
         self.running = False
