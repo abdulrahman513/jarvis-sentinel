@@ -13,20 +13,18 @@
         #map-container { height: 280px; width: 100%; position: relative; border: 1px solid #444c56; }
         #map { height: 100%; width: 100%; }
         
-        /* War Room Overlay */
         #war-room { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #000; }
         .war-room-active { display: block !important; }
         
-        /* Tactical HUD */
-        .map-overlay-btn { background: rgba(28, 33, 40, 0.9); border: 1px solid #444c56; color: #adbac7; font-size: 8px; padding: 2px 5px; cursor: pointer; text-transform: uppercase; }
-        .map-overlay-btn:hover { border-color: #00ff41; color: #fff; }
-        .hud-text { font-family: 'Courier New', Courier, monospace; text-shadow: 0 0 5px #00ff41; color: #00ff41; font-size: 10px; }
+        .map-overlay-btn { background: rgba(10, 10, 10, 0.9); border: 1px solid #444c56; color: #adbac7; font-size: 8px; padding: 6px 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; border-radius: 2px; }
+        .map-overlay-btn:hover { border-color: #00ff41; color: #fff; box-shadow: 0 0 12px rgba(0, 255, 65, 0.5); }
+        .hud-text { font-family: 'Courier New', monospace; text-shadow: 0 0 5px #00ff41; color: #00ff41; font-size: 10px; font-weight: bold; }
 
-        /* Crosshair Overlay */
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 1px solid rgba(0, 255, 65, 0.3); pointer-events: none; border-radius: 50%; z-index: 5; }
-        .crosshair::before, .crosshair::after { content: ''; position: absolute; background: rgba(0, 255, 65, 0.5); }
-        .crosshair::before { top: 50%; left: -10px; right: -10px; height: 1px; }
-        .crosshair::after { left: 50%; top: -10px; bottom: -10px; width: 1px; }
+        /* THE PEAK TACTICAL CROSSHAIR */
+        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; pointer-events: none; z-index: 100; }
+        .crosshair::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #00ff41; box-shadow: 0 0 15px #00ff41; }
+        .crosshair::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #00ff41; box-shadow: 0 0 15px #00ff41; }
+        .crosshair-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border: 2px solid #00ff41; border-radius: 50%; background: rgba(0,255,65,0.15); box-shadow: 0 0 15px #00ff41; }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #444c56; }
@@ -37,7 +35,7 @@
     <header class="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
         <div>
             <h1 class="text-lg font-bold text-white tracking-widest uppercase">J.A.R.V.I.S. SIEM</h1>
-            <p class="text-[9px] text-gray-500 uppercase">Strategic Node: Gojra, PK | Sentinel Active</p>
+            <p class="text-[9px] text-gray-500 uppercase font-bold">Node: Gojra, PK | Strategic Grid Sync: 100%</p>
         </div>
         <div class="flex gap-4 items-center">
             <div id="maint-btn">
@@ -46,12 +44,11 @@
                     MAINT: {{ 'ON' if maint else 'OFF' }}
                 </button>
             </div>
-            <div class="text-[10px] text-green-500 border-l border-gray-700 pl-4 uppercase font-bold">GRID SYNC: 100%</div>
+            <div class="text-[10px] text-green-500 border-l border-gray-700 pl-4 uppercase font-bold">SENTINEL: ACTIVE</div>
         </div>
     </header>
 
     <div class="grid grid-cols-12 gap-4 flex-grow overflow-hidden">
-        
         <div class="col-span-8 flex flex-col gap-4 overflow-hidden">
             <div class="siem-box flex-grow p-4 overflow-hidden flex flex-col">
                 <table class="w-full text-left text-[11px]">
@@ -63,26 +60,23 @@
                     </tbody>
                 </table>
             </div>
-            <div id="forensic-slate" class="h-24 siem-box p-3 overflow-auto font-mono text-[9px] text-gray-600">
+            <div id="forensic-slate" class="h-24 siem-box p-3 overflow-auto font-mono text-[9px] text-gray-600 border-t-2 border-green-900/30">
                 // System awaiting log selection...
             </div>
         </div>
 
         <div class="col-span-4 flex flex-col gap-4 overflow-hidden">
-            
             <div id="map-container" class="rounded overflow-hidden">
-                <div class="absolute top-2 right-2 z-20 flex flex-col gap-1">
-                    <button class="map-overlay-btn" onclick="toggleHeatmap()">Toggle Heatmap</button>
-                    <button class="map-overlay-btn" onclick="toggleMapMode()">2D/3D</button>
-                    <button class="map-overlay-btn" onclick="enterWarRoom()">War Room</button>
+                <div class="absolute top-2 right-12 z-20 flex flex-col gap-1">
+                    <button class="map-overlay-btn" onclick="toggleHeatmap()">Thermal Mode</button>
+                    <button class="map-overlay-btn" onclick="toggleMapMode()">2D/3D Mode</button>
+                    <button class="map-overlay-btn font-bold text-red-500" onclick="enterWarRoom()">WAR ROOM</button>
                 </div>
-                
-                <div class="absolute bottom-2 left-2 z-20 hud-text bg-black/60 p-1 rounded">
-                    LAT/LON: <span id="telemetry">0.000 / 0.000</span><br>
-                    BEARING: <span id="bearing">0°</span>
+                <div class="absolute bottom-2 left-2 z-20 hud-text bg-black/80 p-1 rounded border border-green-900/50">
+                    POS: <span id="telemetry">0.000 / 0.000</span><br>
+                    HDG: <span id="bearing">0°</span>
                 </div>
-
-                <div class="crosshair"></div>
+                <div class="crosshair"><div class="crosshair-center"></div></div>
                 <div id="map"></div>
             </div>
             
@@ -99,7 +93,6 @@
                         {% endfor %}
                     </div>
                 </div>
-
                 <div class="col-span-2 siem-box p-3 flex flex-col overflow-hidden">
                     <div id="chat-window" class="flex-grow overflow-y-auto mb-2 text-[10px] space-y-2">
                         {% for msg in chat_history %}<div class="{{ 'text-white/40' if msg[0] == 'USER' else 'text-green-400' }}"><strong>{{ msg[0] }}:</strong> {{ msg[1] }}</div>{% endfor %}
@@ -114,53 +107,82 @@
     </div>
 
     <div id="war-room">
-        <div class="absolute top-4 left-4 z-[10000]">
-            <h2 class="text-red-500 text-xl font-bold bg-black/80 p-2 border-l-4 border-red-600">FULL TACTICAL OVERLAY</h2>
-            <button class="bg-red-900 text-white px-4 py-1 text-xs mt-2" onclick="exitWarRoom()">CLOSE</button>
+        <div class="absolute top-4 left-4 z-[10000] space-y-2">
+            <h2 class="text-red-500 text-xl font-bold bg-black/90 p-2 border-l-4 border-red-600 uppercase tracking-tighter">TACTICAL OVERLAY - LEVEL 1</h2>
+            <button class="bg-red-900 text-white px-6 py-2 text-xs font-bold hover:bg-red-700 uppercase" onclick="exitWarRoom()">Exit Recon</button>
         </div>
+
+        <div class="absolute top-4 right-14 z-[10000] flex flex-col gap-2">
+            <button class="map-overlay-btn" onclick="toggleHeatmap()">Thermal Mode</button>
+            <button class="map-overlay-btn" onclick="toggleMapMode()">2D/3D Mode</button>
+        </div>
+
+        <div class="absolute bottom-6 left-6 z-[10000] hud-text bg-black/90 p-3 rounded border-2 border-red-600 scale-125 origin-bottom-left">
+            COORDINATES: <span id="telemetry-war">0.000 / 0.000</span><br>
+            BEARING: <span id="bearing-war">0°</span>
+        </div>
+        <div class="crosshair"><div class="crosshair-center"></div></div>
         <div id="war-map" style="width: 100%; height: 100%;"></div>
     </div>
 
     <script>
         let is3D = true;
         let heatmapVisible = false;
+        let warMap = null;
 
-        const mapConfig = {
-            container: 'map',
-            style: {
-                version: 8,
-                sources: {
-                    'satellite': { 'type': 'raster', 'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], 'tileSize': 256 },
-                    'threats': { 'type': 'geojson', 'data': { 'type': 'FeatureCollection', 'features': [] } }
-                },
-                layers: [
-                    { 'id': 'satellite', 'type': 'raster', 'source': 'satellite' },
-                    {
-                        'id': 'threat-heat', 'type': 'heatmap', 'source': 'threats', 'layout': { 'visibility': 'none' },
-                        'paint': { 'heatmap-weight': 1, 'heatmap-intensity': 3, 'heatmap-color': [ 'interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 0.2, 'royalblue', 0.4, 'cyan', 0.6, 'lime', 0.8, 'yellow', 1, 'red' ], 'heatmap-radius': 20, 'heatmap-opacity': 0.8 }
-                    }
-                ]
+        const baseStyle = {
+            version: 8,
+            sources: {
+                'satellite': { 'type': 'raster', 'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], 'tileSize': 256 },
+                'labels': { 'type': 'raster', 'tiles': ['https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png'], 'tileSize': 256 },
+                'threats': { 'type': 'geojson', 'data': { 'type': 'FeatureCollection', 'features': [] } }
             },
-            center: [72.48, 31.15], zoom: 2, pitch: 60, bearing: -20
+            layers: [
+                { 'id': 'satellite', 'type': 'raster', 'source': 'satellite' },
+                { 
+                    'id': 'threat-heat', 'type': 'heatmap', 'source': 'threats', 'layout': { 'visibility': 'none' }, 
+                    'paint': { 
+                        'heatmap-weight': 1, 
+                        'heatmap-intensity': 4, // Cranked up for "Peak" visibility
+                        'heatmap-color': [
+                            'interpolate', ['linear'], ['heatmap-density'],
+                            0, 'rgba(0,0,255,0)',
+                            0.2, 'royalblue',
+                            0.4, 'cyan',
+                            0.6, 'lime',
+                            0.8, 'yellow',
+                            1, 'red'
+                        ], 
+                        'heatmap-radius': 35, // Wider smear for that tactical feel
+                        'heatmap-opacity': 0.8 
+                    } 
+                }
+            ]
         };
 
-        var map = new maplibregl.Map(mapConfig);
+        var map = new maplibregl.Map({ container: 'map', style: baseStyle, center: [72.48, 31.15], zoom: 2, pitch: 60, bearing: -20 });
+        map.addControl(new maplibregl.NavigationControl());
 
-        // Telemetry Update
-        map.on('move', () => {
-            const center = map.getCenter();
-            document.getElementById('telemetry').innerText = `${center.lat.toFixed(3)} / ${center.lng.toFixed(3)}`;
-            document.getElementById('bearing').innerText = `${Math.round(map.getBearing())}°`;
-        });
+        const updateTelemetry = (targetMap, latId, bearingId) => {
+            const center = targetMap.getCenter();
+            document.getElementById(latId).innerText = `${center.lat.toFixed(4)} / ${center.lng.toFixed(4)}`;
+            document.getElementById(bearingId).innerText = `${Math.round(targetMap.getBearing())}°`;
+        };
+
+        map.on('move', () => updateTelemetry(map, 'telemetry', 'bearing'));
 
         function toggleHeatmap() {
             heatmapVisible = !heatmapVisible;
             map.setLayoutProperty('threat-heat', 'visibility', heatmapVisible ? 'visible' : 'none');
+            if(warMap) warMap.setLayoutProperty('threat-heat', 'visibility', heatmapVisible ? 'visible' : 'none');
         }
 
         function toggleMapMode() {
             is3D = !is3D;
-            map.easeTo({ pitch: is3D ? 60 : 0, bearing: is3D ? -20 : 0 });
+            const tp = is3D ? 60 : 0;
+            const tb = is3D ? -20 : 0;
+            map.easeTo({ pitch: tp, bearing: tb });
+            if(warMap) warMap.easeTo({ pitch: tp, bearing: tb });
         }
 
         async function focusThreat(locStr) {
@@ -168,18 +190,34 @@
             let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locStr)}`);
             let data = await res.json();
             if(data && data.length > 0) {
-                map.flyTo({ center: [data[0].lon, data[0].lat], zoom: 16, pitch: 60, bearing: -20 });
-                // Update Heatmap Data
-                let currentData = map.getSource('threats')._data;
-                currentData.features.push({ "type": "Feature", "geometry": { "type": "Point", "coordinates": [data[0].lon, data[0].lat] } });
-                map.getSource('threats').setData(currentData);
+                const target = [data[0].lon, data[0].lat];
+                map.flyTo({ center: target, zoom: 17, pitch: 60, bearing: -20 });
+                let src = map.getSource('threats');
+                let d = src._data;
+                d.features.push({ "type": "Feature", "geometry": { "type": "Point", "coordinates": target } });
+                src.setData(d);
+                if(warMap) warMap.getSource('threats').setData(d);
             }
         }
 
         function enterWarRoom() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const pitch = map.getPitch();
+            const bearing = map.getBearing();
             document.getElementById('war-room').classList.add('war-room-active');
-            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+            if (!warMap) {
+                let ws = JSON.parse(JSON.stringify(baseStyle));
+                ws.layers.push({ 'id': 'map-labels', 'type': 'raster', 'source': 'labels' });
+                warMap = new maplibregl.Map({ container: 'war-map', style: ws, center: center, zoom: zoom, pitch: pitch, bearing: bearing });
+                warMap.addControl(new maplibregl.NavigationControl());
+                warMap.on('move', () => updateTelemetry(warMap, 'telemetry-war', 'bearing-war'));
+            } else {
+                warMap.jumpTo({ center: center, zoom: zoom, pitch: pitch, bearing: bearing });
+            }
+            setTimeout(() => { warMap.resize(); warMap.setLayoutProperty('threat-heat', 'visibility', heatmapVisible ? 'visible' : 'none'); }, 50);
         }
+
         function exitWarRoom() { document.getElementById('war-room').classList.remove('war-room-active'); }
     </script>
 </body>
