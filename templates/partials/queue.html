@@ -1,11 +1,24 @@
 {% for inc in incidents %}
-<tr class="border-b border-gray-800/40 hover:bg-white/5 transition-colors">
-    <td class="py-2 text-gray-500">{{ inc[1] }}</td>
-    <td class="text-blue-400 font-bold">{{ inc[2] }}</td>
-    <td class="truncate max-w-xs italic">{{ inc[8] }}</td>
+<tr class="border-b border-gray-800/30 hover:bg-white/5 transition-colors group">
+    <td class="py-2 text-gray-600">{{ inc[1] }}</td>
+    
+    <td class="text-blue-400 font-bold cursor-pointer hover:underline" 
+        onclick="focusThreat('{{ inc[4] }}')">
+        {{ inc[2] }}
+    </td>
+    
+    <td class="text-green-500/70 text-[10px] italic cursor-pointer hover:text-green-400" 
+        onclick="focusThreat('{{ inc[4] }}')">
+        {{ inc[4] }}
+    </td>
+    
     <td class="flex gap-2">
-        <button hx-post="/pardon" hx-vals='{"ip": "{{ inc[2] }}"}' hx-swap="outerHTML" class="text-red-500 underline">[PARDON]</button>
-        <button hx-post="/get-forensics" hx-vals='{"path": "{{ inc[6] }}"}' hx-target="#forensic-slate" class="text-green-500 underline">[LOGS]</button>
+        {% if inc[9] %}
+        <button hx-post="/pardon" hx-vals='{"ip": "{{ inc[2] }}"}' hx-swap="outerHTML" class="text-red-500 underline text-[10px] opacity-70 hover:opacity-100">[PARDON]</button>
+        {% else %}
+        <span class="text-blue-500 font-bold text-[10px] uppercase">Neutralized</span>
+        {% endif %}
+        <button hx-post="/get-forensics" hx-vals='{"path": "{{ inc[6] }}"}' hx-target="#forensic-slate" class="text-green-500 underline text-[10px] opacity-70 hover:opacity-100">[LOGS]</button>
     </td>
 </tr>
 {% endfor %}
