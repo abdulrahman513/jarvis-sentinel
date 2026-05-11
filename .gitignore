@@ -2,3 +2,4 @@
 evidence_vault/
 __pycache__/
 *.pcap
+*.db
