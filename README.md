@@ -23,3 +23,20 @@
    ```bash
    git clone [https://github.com/abdulrahman513/jarvis-sentinel.git](https://github.com/abdulrahman513/jarvis-sentinel.git)
    cd jarvis-sentinel
+
+2. **Setup Environment:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   cp example.env .env
+
+3. **Configure:**
+   **Update .env with your AbuseIPDB API key and Discord Webhook URL.**
+
+4. **Run as a Service:**
+   ```bash
+   sudo cp jarvis-sentinel.service /etc/systemd/system/
+   sudo systemctl enable --now jarvis-sentinel
+
+  
